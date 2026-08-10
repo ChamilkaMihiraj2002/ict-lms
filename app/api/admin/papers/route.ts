@@ -42,6 +42,36 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PUT(request: Request) {
+  try {
+    const { id, title, grade, medium = 'ENGLISH', year, driveUrl, description } = await request.json();
+
+    if (!id || !title || !grade || !driveUrl) {
+      return NextResponse.json(
+        { error: 'Paper ID, title, grade, and Google Drive URL are required.' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.paper.update({
+      where: { id },
+      data: {
+        title,
+        grade: parseInt(String(grade), 10),
+        medium: medium === 'SINHALA' ? 'SINHALA' : 'ENGLISH',
+        year: year ? parseInt(String(year), 10) : undefined,
+        driveUrl,
+        description,
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Update paper API error:', error);
+    return NextResponse.json({ error: 'Failed to update paper' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

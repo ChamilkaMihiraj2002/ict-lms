@@ -47,3 +47,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create course' }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const { id, title, grade, medium = 'ENGLISH', category, description, iconName, bannerGradient } = await request.json();
+
+    if (!id || !title || !grade || !category || !description) {
+      return NextResponse.json({ error: 'Course ID, title, grade, category, and description are required' }, { status: 400 });
+    }
+
+    const updated = await prisma.course.update({
+      where: { id },
+      data: {
+        title,
+        grade: parseInt(String(grade), 10),
+        medium: medium === 'SINHALA' ? 'SINHALA' : 'ENGLISH',
+        category,
+        description,
+        ...(iconName ? { iconName } : {}),
+        ...(bannerGradient ? { bannerGradient } : {}),
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Update course error:', error);
+    return NextResponse.json({ error: 'Failed to update course' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Course ID is required' }, { status: 400 });
+    }
+
+    await prisma.course.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete course error:', error);
+    return NextResponse.json({ error: 'Failed to delete course' }, { status: 500 });
+  }
+}

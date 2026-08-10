@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, HelpCircle, CheckCircle, Sparkles, Trash2, Clock, Award, Globe } from 'lucide-react';
+import { Plus, HelpCircle, CheckCircle, Sparkles, Trash2, Clock, Award, Edit3 } from 'lucide-react';
 import { GradeLevel, MediumType } from '@/types';
 
 interface OptionDraft {
@@ -21,6 +21,7 @@ export default function AdminQuizzesPage() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
 
   // Form State
   const [courseId, setCourseId] = useState('');
@@ -63,7 +64,7 @@ export default function AdminQuizzesPage() {
       .then((data) => {
         if (Array.isArray(data)) {
           setCourses(data);
-          if (data.length > 0) {
+          if (data.length > 0 && !courseId) {
             setCourseId(data[0].id);
             setGrade(data[0].grade);
             setMedium(data[0].medium || 'ENGLISH');
@@ -76,6 +77,84 @@ export default function AdminQuizzesPage() {
   useEffect(() => {
     fetchQuizzesAndCourses();
   }, []);
+
+  const openCreateModal = () => {
+    setEditingQuizId(null);
+    if (courses.length > 0) {
+      setCourseId(courses[0].id);
+      setGrade(courses[0].grade);
+      setMedium(courses[0].medium || 'ENGLISH');
+    }
+    setTitle('');
+    setDescription('');
+    setDurationMinutes(10);
+    setPassingScore(70);
+    setQuestions([
+      {
+        text: '',
+        type: 'single',
+        options: [
+          { id: 0, text: '' },
+          { id: 1, text: '' },
+          { id: 2, text: '' },
+          { id: 3, text: '' },
+        ],
+        correctAnswers: [0],
+        explanation: '',
+      },
+    ]);
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (quiz: any) => {
+    setEditingQuizId(quiz.id);
+    setCourseId(quiz.courseId || '');
+    setTitle(quiz.title || '');
+    setDescription(quiz.description || '');
+    setGrade(quiz.grade || 10);
+    setMedium(quiz.medium || 'ENGLISH');
+    setDurationMinutes(quiz.durationMinutes || 10);
+    setPassingScore(quiz.passingScore || 70);
+
+    if (quiz.questions && quiz.questions.length > 0) {
+      setQuestions(
+        quiz.questions.map((q: any) => ({
+          text: q.text || '',
+          type: q.type || 'single',
+          options: Array.isArray(q.options)
+            ? q.options.map((opt: any, idx: number) => ({
+                id: typeof opt === 'object' && opt.id !== undefined ? opt.id : idx,
+                text: typeof opt === 'object' ? opt.text : String(opt),
+              }))
+            : [
+                { id: 0, text: '' },
+                { id: 1, text: '' },
+                { id: 2, text: '' },
+                { id: 3, text: '' },
+              ],
+          correctAnswers: Array.isArray(q.correctAnswers) ? q.correctAnswers : [0],
+          explanation: q.explanation || '',
+        }))
+      );
+    } else {
+      setQuestions([
+        {
+          text: '',
+          type: 'single',
+          options: [
+            { id: 0, text: '' },
+            { id: 1, text: '' },
+            { id: 2, text: '' },
+            { id: 3, text: '' },
+          ],
+          correctAnswers: [0],
+          explanation: '',
+        },
+      ]);
+    }
+
+    setShowAddModal(true);
+  };
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -138,15 +217,20 @@ export default function AdminQuizzesPage() {
     setQuestions(next);
   };
 
-  const handleCreateQuiz = async (e: React.FormEvent) => {
+  const handleSaveQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const isEdit = !!editingQuizId;
+    const url = '/api/admin/quizzes';
+    const method = isEdit ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('/api/admin/quizzes', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(isEdit ? { id: editingQuizId } : {}),
           courseId,
           title,
           description,
@@ -159,24 +243,8 @@ export default function AdminQuizzesPage() {
       });
 
       if (res.ok) {
-        setMessage('Quiz created and saved to NeonDB PostgreSQL!');
+        setMessage(isEdit ? 'Quiz updated successfully!' : 'Quiz created and saved to NeonDB!');
         setShowAddModal(false);
-        setTitle('');
-        setDescription('');
-        setQuestions([
-          {
-            text: '',
-            type: 'single',
-            options: [
-              { id: 0, text: '' },
-              { id: 1, text: '' },
-              { id: 2, text: '' },
-              { id: 3, text: '' },
-            ],
-            correctAnswers: [0],
-            explanation: '',
-          },
-        ]);
         fetchQuizzesAndCourses();
         setTimeout(() => setMessage(''), 3000);
       }
@@ -187,18 +255,32 @@ export default function AdminQuizzesPage() {
     }
   };
 
+  const handleDeleteQuiz = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this quiz? All questions will also be deleted.')) return;
+    try {
+      const res = await fetch(`/api/admin/quizzes?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMessage('Quiz deleted successfully.');
+        fetchQuizzesAndCourses();
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">ICT Quiz Management</h1>
           <p className="text-xs text-slate-400">
-            Create and publish English & Sinhala medium quiz assessments in NeonDB PostgreSQL.
+            Create, edit, and delete English & Sinhala medium quiz assessments in NeonDB PostgreSQL.
           </p>
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openCreateModal}
           className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white rounded-xl text-xs font-semibold shadow-lg transition-all flex items-center gap-1.5 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" /> Create New Quiz
@@ -240,25 +322,44 @@ export default function AdminQuizzesPage() {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-slate-800 text-xs text-slate-400 font-medium flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> {quiz.durationMinutes} Mins
-              </span>
-              <span className="flex items-center gap-1">
-                <Award className="w-3.5 h-3.5" /> Pass: {quiz.passingScore}%
-              </span>
+            <div className="space-y-3 pt-3 border-t border-slate-800">
+              <div className="text-xs text-slate-400 font-medium flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> {quiz.durationMinutes} Mins
+                </span>
+                <span className="flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5" /> Pass: {quiz.passingScore}%
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-800/60">
+                <button
+                  onClick={() => openEditModal(quiz)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5" /> Edit Quiz
+                </button>
+                <button
+                  onClick={() => handleDeleteQuiz(quiz.id)}
+                  className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-1 transition-colors"
+                  title="Delete Quiz"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Create Quiz Modal */}
+      {/* Create / Edit Quiz Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" /> Create Quiz & Questions
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+                {editingQuizId ? 'Edit Quiz & Questions' : 'Create Quiz & Questions'}
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -268,7 +369,7 @@ export default function AdminQuizzesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateQuiz} className="space-y-6">
+            <form onSubmit={handleSaveQuiz} className="space-y-6">
               {/* Select Course & Medium Details */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1 sm:col-span-1">
@@ -493,7 +594,7 @@ export default function AdminQuizzesPage() {
                   disabled={loading}
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg"
                 >
-                  {loading ? 'Saving Quiz...' : 'Save Quiz to NeonDB'}
+                  {loading ? 'Saving Quiz...' : editingQuizId ? 'Update Quiz' : 'Save Quiz to NeonDB'}
                 </button>
               </div>
             </form>

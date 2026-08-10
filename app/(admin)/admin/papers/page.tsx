@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Download, Eye, Trash2, CheckCircle, Sparkles, ExternalLink, Globe } from 'lucide-react';
+import { Plus, FileText, Download, Eye, Trash2, CheckCircle, Sparkles, Edit3 } from 'lucide-react';
 import { getGoogleDriveEmbedUrl, getGoogleDriveDownloadUrl } from '@/lib/drive';
 import { GradeLevel, MediumType } from '@/types';
 
 export default function AdminPapersPage() {
   const [papers, setPapers] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
   const [previewPaper, setPreviewPaper] = useState<any | null>(null);
 
   // Form state
@@ -34,15 +35,42 @@ export default function AdminPapersPage() {
     fetchPapers();
   }, []);
 
-  const handleCreatePaper = async (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setEditingPaperId(null);
+    setTitle('');
+    setGrade(10);
+    setMedium('ENGLISH');
+    setYear(new Date().getFullYear());
+    setDriveUrl('');
+    setDescription('');
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (paper: any) => {
+    setEditingPaperId(paper.id);
+    setTitle(paper.title || '');
+    setGrade(paper.grade || 10);
+    setMedium(paper.medium || 'ENGLISH');
+    setYear(paper.year || new Date().getFullYear());
+    setDriveUrl(paper.driveUrl || '');
+    setDescription(paper.description || '');
+    setShowAddModal(true);
+  };
+
+  const handleSavePaper = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const isEdit = !!editingPaperId;
+    const url = '/api/admin/papers';
+    const method = isEdit ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('/api/admin/papers', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(isEdit ? { id: editingPaperId } : {}),
           title,
           grade,
           medium,
@@ -53,11 +81,8 @@ export default function AdminPapersPage() {
       });
 
       if (res.ok) {
-        setMessage('Past paper uploaded and saved to NeonDB PostgreSQL!');
+        setMessage(isEdit ? 'Past paper updated successfully!' : 'Past paper uploaded and saved to NeonDB!');
         setShowAddModal(false);
-        setTitle('');
-        setDriveUrl('');
-        setDescription('');
         fetchPapers();
         setTimeout(() => setMessage(''), 3000);
       }
@@ -73,7 +98,9 @@ export default function AdminPapersPage() {
     try {
       const res = await fetch(`/api/admin/papers?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
+        setMessage('Past paper deleted successfully.');
         fetchPapers();
+        setTimeout(() => setMessage(''), 3000);
       }
     } catch (e) {
       console.error(e);
@@ -88,12 +115,12 @@ export default function AdminPapersPage() {
             <FileText className="w-6 h-6 text-cyan-400" /> ICT Exam Papers & PDFs
           </h1>
           <p className="text-xs text-slate-400">
-            Upload Google Drive PDF links for Grade 6-13 ICT exam papers in English and Sinhala mediums.
+            Upload, edit, and manage Google Drive PDF links for Grade 6-13 ICT exam papers in English and Sinhala mediums.
           </p>
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openCreateModal}
           className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white rounded-xl text-xs font-semibold shadow-lg transition-all flex items-center gap-1.5 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" /> Add Past Paper PDF
@@ -155,25 +182,35 @@ export default function AdminPapersPage() {
                 </a>
               </div>
 
-              <button
-                onClick={() => handleDeletePaper(paper.id)}
-                className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
-                title="Delete Paper"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => openEditModal(paper)}
+                  className="p-2 rounded-xl text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
+                  title="Edit Paper"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeletePaper(paper.id)}
+                  className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                  title="Delete Paper"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Add Paper Modal */}
+      {/* Add / Edit Paper Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" /> Upload Paper (Google Drive)
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+                {editingPaperId ? 'Edit Past Paper PDF' : 'Upload Paper (Google Drive)'}
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -183,7 +220,7 @@ export default function AdminPapersPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreatePaper} className="space-y-4">
+            <form onSubmit={handleSavePaper} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-300 uppercase">Paper Title</label>
                 <input
@@ -276,7 +313,7 @@ export default function AdminPapersPage() {
                   disabled={loading}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg"
                 >
-                  {loading ? 'Uploading...' : 'Save Paper to NeonDB'}
+                  {loading ? 'Saving...' : editingPaperId ? 'Update Paper' : 'Save Paper to NeonDB'}
                 </button>
               </div>
             </form>

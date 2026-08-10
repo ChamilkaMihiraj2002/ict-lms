@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, BookOpen, CheckCircle, Sparkles, Eye, Edit3, HelpCircle } from 'lucide-react';
+import { Plus, BookOpen, CheckCircle, Sparkles, Eye, Edit3, Trash2 } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { GradeLevel, MediumType } from '@/types';
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
 
   const [title, setTitle] = useState('');
@@ -33,15 +34,42 @@ export default function AdminCoursesPage() {
     fetchCourses();
   }, []);
 
-  const handleCreateCourse = async (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setEditingCourseId(null);
+    setTitle('');
+    setGrade(10);
+    setMedium('ENGLISH');
+    setCategory('Web Development');
+    setDescription(
+      `# Course Curriculum & Objectives\nLearn the fundamentals of web layout using **HTML5**, **CSS3**, and interactive **JavaScript**.\n\n> Note: This course covers national ICT syllabus topics for G.C.E. O/L.\n\n### Sample HTML Code\n\`\`\`html\n<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello ICT Student!</h1>\n  </body>\n</html>\n\`\`\``
+    );
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (course: any) => {
+    setEditingCourseId(course.id);
+    setTitle(course.title || '');
+    setGrade(course.grade || 10);
+    setMedium(course.medium || 'ENGLISH');
+    setCategory(course.category || 'Web Development');
+    setDescription(course.description || '');
+    setShowAddModal(true);
+  };
+
+  const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const isEdit = !!editingCourseId;
+    const url = '/api/admin/courses';
+    const method = isEdit ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('/api/admin/courses', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(isEdit ? { id: editingCourseId } : {}),
           title,
           grade,
           medium,
@@ -51,9 +79,8 @@ export default function AdminCoursesPage() {
       });
 
       if (res.ok) {
-        setMessage('Course created and saved to NeonDB PostgreSQL!');
+        setMessage(isEdit ? 'Course updated successfully!' : 'Course created and saved to NeonDB!');
         setShowAddModal(false);
-        setTitle('');
         fetchCourses();
         setTimeout(() => setMessage(''), 3000);
       }
@@ -64,18 +91,32 @@ export default function AdminCoursesPage() {
     }
   };
 
+  const handleDeleteCourse = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this course? All associated modules will also be deleted.')) return;
+    try {
+      const res = await fetch(`/api/admin/courses?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMessage('Course deleted successfully.');
+        fetchCourses();
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">ICT Course Management</h1>
           <p className="text-xs text-slate-400">
-            Publish and manage English and Sinhala medium curriculum courses with rich Markdown descriptions.
+            Publish, edit, and delete English and Sinhala medium curriculum courses with rich Markdown descriptions.
           </p>
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openCreateModal}
           className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white rounded-xl text-xs font-semibold shadow-lg transition-all flex items-center gap-1.5 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" /> Add New Course
@@ -116,21 +157,37 @@ export default function AdminCoursesPage() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-800 text-xs text-slate-500 font-medium flex items-center justify-between">
-              <span>{course.modules?.length || 0} Modules</span>
-              <span className="text-emerald-400 font-semibold">Published in NeonDB</span>
+            <div className="pt-3 border-t border-slate-800 text-xs font-medium flex items-center justify-between">
+              <span className="text-slate-500">{course.modules?.length || 0} Modules</span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openEditModal(course)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5" /> Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteCourse(course.id)}
+                  className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-1 transition-colors"
+                  title="Delete Course"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Modal for Creating Course with Markdown Editor + Live Preview */}
+      {/* Modal for Creating / Editing Course */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" /> Create ICT Course (Markdown Enabled)
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+                {editingCourseId ? 'Edit ICT Course' : 'Create ICT Course (Markdown Enabled)'}
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -140,7 +197,7 @@ export default function AdminCoursesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateCourse} className="space-y-4">
+            <form onSubmit={handleSaveCourse} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-300 uppercase">Course Title</label>
                 <input
@@ -256,7 +313,7 @@ export default function AdminCoursesPage() {
                   disabled={loading}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg"
                 >
-                  {loading ? 'Creating...' : 'Save Course to NeonDB'}
+                  {loading ? 'Saving...' : editingCourseId ? 'Update Course' : 'Save Course to NeonDB'}
                 </button>
               </div>
             </form>
