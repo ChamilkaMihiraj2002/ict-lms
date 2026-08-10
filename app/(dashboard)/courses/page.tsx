@@ -130,7 +130,7 @@ export default function CoursesCatalogPage() {
               {/* Body */}
               <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
                 <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
-                  {course.description}
+                  {course.description ? course.description.replace(/<[^>]*>/g, '').replace(/[#*`_~>]/g, '').replace(/\n+/g, ' ').trim() : ''}
                 </p>
 
                 <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">

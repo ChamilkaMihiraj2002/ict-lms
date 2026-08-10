@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { FileCode, Play, Terminal, Sparkles } from 'lucide-react';
 
 interface MarkdownRendererProps {
@@ -15,6 +16,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
     <div className={`prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed text-sm sm:text-base ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           // Headings
           h1: ({ children }) => (
@@ -33,6 +35,62 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-4 mb-2">
               {children}
             </h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className="text-base font-bold text-slate-800 dark:text-slate-200 mt-3 mb-1.5">
+              {children}
+            </h4>
+          ),
+
+          // Subscript & Superscript (e.g., 45<sub>10</sub>, 1011<sub>2</sub>, 2³)
+          sub: ({ children }) => (
+            <sub className="text-[0.75em] align-baseline relative -bottom-[0.2em] font-mono text-indigo-600 dark:text-cyan-400 font-bold px-0.5">
+              {children}
+            </sub>
+          ),
+          sup: ({ children }) => (
+            <sup className="text-[0.75em] align-baseline relative -top-[0.4em] font-mono text-indigo-600 dark:text-cyan-400 font-bold px-0.5">
+              {children}
+            </sup>
+          ),
+
+          // Tables (GFM & HTML Tables)
+          table: ({ children }) => (
+            <div className="my-6 overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-slate-100 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-bold">
+              {children}
+            </thead>
+          ),
+          tbody: ({ children }) => (
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 bg-white dark:bg-slate-900/50">
+              {children}
+            </tbody>
+          ),
+          tr: ({ children }) => (
+            <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+              {children}
+            </tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-4 py-3 font-semibold border-r last:border-r-0 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-4 py-3 border-r last:border-r-0 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
+              {children}
+            </td>
+          ),
+
+          // Horizontal Rule
+          hr: () => (
+            <hr className="my-6 border-slate-200 dark:border-slate-800" />
           ),
 
           // Emphasis
@@ -55,6 +113,18 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
           ul: ({ children }) => <ul className="list-disc list-inside space-y-1.5 my-3 pl-2">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal list-inside space-y-1.5 my-3 pl-2">{children}</ol>,
           li: ({ children }) => <li className="text-slate-700 dark:text-slate-300">{children}</li>,
+
+          // Links
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 dark:text-cyan-400 font-medium underline underline-offset-4 hover:text-indigo-700 dark:hover:text-cyan-300 transition-colors"
+            >
+              {children}
+            </a>
+          ),
 
           // Inline Code & Code Block with Interactive Runner
           code: ({ node, inline, className, children, ...props }: any) => {

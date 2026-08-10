@@ -17,9 +17,26 @@ export default function AdminCoursesPage() {
   const [grade, setGrade] = useState<GradeLevel>(10);
   const [medium, setMedium] = useState<MediumType>('ENGLISH');
   const [category, setCategory] = useState('Web Development');
-  const [description, setDescription] = useState(
-    `# Course Curriculum & Objectives\nLearn the fundamentals of web layout using **HTML5**, **CSS3**, and interactive **JavaScript**.\n\n> Note: This course covers national ICT syllabus topics for G.C.E. O/L.\n\n### Sample HTML Code\n\`\`\`html\n<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello ICT Student!</h1>\n  </body>\n</html>\n\`\`\``
-  );
+  const sampleMarkdown = `# පරිගණක විද්‍යාවේ සංඛ්‍යා පද්ධති (Number Systems)
+
+පරිගණකයේ අභ්‍යන්තර ක්‍රියාකාරිත්වය සඳහා විවිධ සංඛ්‍යා පද්ධති භාවිතා කරනු ලබයි.
+
+### ප්‍රධාන සංඛ්‍යා පද්ධති:
+1. **දශමය සංඛ්‍යා පද්ධතිය (Decimal):** 45<sub>10</sub>
+2. **ද්විමය සංඛ්‍යා පද්ධතිය (Binary):** 1011<sub>2</sub>
+3. **අෂ්ටමය සංඛ්‍යා පද්ධතිය (Octal):** 74<sub>8</sub>
+4. **ෂඩ්දශමය සංඛ්‍යා පද්ධතිය (Hexadecimal):** 9F<sub>16</sub>
+
+## සාරාංශ වගුව (Summary Table)
+
+| සංඛ්‍යා පද්ධතිය | පාදය (Base) | භාවිතා වන සංකේත | උදාහරණයක් |
+| :--- | :---: | :--- | :--- |
+| **දශමය (Decimal)** | 10 | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 | 245<sub>10</sub> |
+| **ද්විමය (Binary)** | 2 | 0, 1 | 10110<sub>2</sub> |
+| **අෂ්ටමය (Octal)** | 8 | 0, 1, 2, 3, 4, 5, 6, 7 | 457<sub>8</sub> |
+| **ෂඩ්දශමය (Hex)** | 16 | 0-9 සහ A, B, C, D, E, F | 1A3F<sub>16</sub> |`;
+
+  const [description, setDescription] = useState(sampleMarkdown);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -41,11 +58,9 @@ export default function AdminCoursesPage() {
     setEditingCourseId(null);
     setTitle('');
     setGrade(10);
-    setMedium('ENGLISH');
-    setCategory('Web Development');
-    setDescription(
-      `# Course Curriculum & Objectives\nLearn the fundamentals of web layout using **HTML5**, **CSS3**, and interactive **JavaScript**.\n\n> Note: This course covers national ICT syllabus topics for G.C.E. O/L.\n\n### Sample HTML Code\n\`\`\`html\n<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello ICT Student!</h1>\n  </body>\n</html>\n\`\`\``
-    );
+    setMedium('SINHALA');
+    setCategory('Hardware & Systems');
+    setDescription(sampleMarkdown);
     setShowAddModal(true);
   };
 
