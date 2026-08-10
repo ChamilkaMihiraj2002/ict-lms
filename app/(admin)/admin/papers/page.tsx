@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Plus, FileText, Download, Eye, Trash2, CheckCircle, Sparkles, Edit3 } from 'lucide-react';
 import { getGoogleDriveEmbedUrl, getGoogleDriveDownloadUrl } from '@/lib/drive';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { GradeLevel, MediumType } from '@/types';
 
 export default function AdminPapersPage() {
   const [papers, setPapers] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
+  const [deletingPaper, setDeletingPaper] = useState<{ id: string; title: string } | null>(null);
   const [previewPaper, setPreviewPaper] = useState<any | null>(null);
 
   // Form state
@@ -20,6 +22,7 @@ export default function AdminPapersPage() {
   const [description, setDescription] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const fetchPapers = () => {
@@ -93,17 +96,21 @@ export default function AdminPapersPage() {
     }
   };
 
-  const handleDeletePaper = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this paper?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingPaper) return;
+    setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/admin/papers?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/papers?id=${deletingPaper.id}`, { method: 'DELETE' });
       if (res.ok) {
         setMessage('Past paper deleted successfully.');
+        setDeletingPaper(null);
         fetchPapers();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -191,7 +198,7 @@ export default function AdminPapersPage() {
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDeletePaper(paper.id)}
+                  onClick={() => setDeletingPaper({ id: paper.id, title: paper.title })}
                   className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
                   title="Delete Paper"
                 >
@@ -360,6 +367,17 @@ export default function AdminPapersPage() {
           </div>
         </div>
       )}
+
+      {/* Popup Confirmation Modal for Paper Deletion */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingPaper}
+        title="Delete Past Paper PDF?"
+        itemName={deletingPaper?.title}
+        description="Are you sure you want to delete this past paper PDF from the LMS? Students will no longer be able to view or download it."
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeletingPaper(null)}
+      />
     </div>
   );
 }

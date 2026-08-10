@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, HelpCircle, CheckCircle, Sparkles, Trash2, Clock, Award, Edit3 } from 'lucide-react';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { GradeLevel, MediumType } from '@/types';
 
 interface OptionDraft {
@@ -22,6 +23,7 @@ export default function AdminQuizzesPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
+  const [deletingQuiz, setDeletingQuiz] = useState<{ id: string; title: string } | null>(null);
 
   // Form State
   const [courseId, setCourseId] = useState('');
@@ -49,6 +51,7 @@ export default function AdminQuizzesPage() {
   ]);
 
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const fetchQuizzesAndCourses = () => {
@@ -255,17 +258,21 @@ export default function AdminQuizzesPage() {
     }
   };
 
-  const handleDeleteQuiz = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this quiz? All questions will also be deleted.')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingQuiz) return;
+    setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/admin/quizzes?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/quizzes?id=${deletingQuiz.id}`, { method: 'DELETE' });
       if (res.ok) {
         setMessage('Quiz deleted successfully.');
+        setDeletingQuiz(null);
         fetchQuizzesAndCourses();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -340,7 +347,7 @@ export default function AdminQuizzesPage() {
                   <Edit3 className="w-3.5 h-3.5" /> Edit Quiz
                 </button>
                 <button
-                  onClick={() => handleDeleteQuiz(quiz.id)}
+                  onClick={() => setDeletingQuiz({ id: quiz.id, title: quiz.title })}
                   className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-1 transition-colors"
                   title="Delete Quiz"
                 >
@@ -601,6 +608,17 @@ export default function AdminQuizzesPage() {
           </div>
         </div>
       )}
+
+      {/* Popup Confirmation Modal for Quiz Deletion */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingQuiz}
+        title="Delete Quiz?"
+        itemName={deletingQuiz?.title}
+        description="Are you sure you want to delete this quiz? All associated questions will be permanently removed."
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeletingQuiz(null)}
+      />
     </div>
   );
 }
