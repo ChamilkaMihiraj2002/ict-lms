@@ -123,7 +123,7 @@ export default function StudentDashboard() {
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-cyan-400" />
-              Grade {user.grade} ICT Courses ({selectedMedium === 'SINHALA' ? 'සිංහල මාධ්‍යය' : 'English Medium'})
+              Grade {user.grade} ICT Lessons ({selectedMedium === 'SINHALA' ? 'සිංහල මාධ්‍යය' : 'English Medium'})
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Curriculum content filtered for Grade {user.grade} in {selectedMedium === 'SINHALA' ? 'Sinhala' : 'English'} medium

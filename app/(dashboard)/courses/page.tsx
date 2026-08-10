@@ -58,7 +58,7 @@ export default function CoursesCatalogPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
             <GraduationCap className="w-7 h-7 text-indigo-600 dark:text-cyan-400" />
-            ICT Course Catalog
+            ICT Lessons Catalog
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {user ? `Filtered for Grade ${user.grade} Curriculum` : 'National ICT Curriculum'}

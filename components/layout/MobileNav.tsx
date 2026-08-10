@@ -9,7 +9,7 @@ export function MobileNav() {
 
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Courses', href: '/courses', icon: BookOpen },
+    { name: 'Lessons', href: '/courses', icon: BookOpen },
     { name: 'Quizzes', href: '/quizzes', icon: HelpCircle },
     { name: 'Papers', href: '/papers', icon: FileText },
   ];
