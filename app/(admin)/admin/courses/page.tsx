@@ -17,29 +17,134 @@ export default function AdminCoursesPage() {
   const [grade, setGrade] = useState<GradeLevel>(10);
   const [medium, setMedium] = useState<MediumType>('ENGLISH');
   const [category, setCategory] = useState('Web Development');
-  const sampleMarkdown = `# පරිගණක විද්‍යාවේ සංඛ්‍යා පද්ධති (Number Systems)
+  const sampleMarkdown = `# පාඨමාලා හැඳින්වීම (Course Overview)
 
-පරිගණකයේ අභ්‍යන්තර ක්‍රියාකාරිත්වය සඳහා විවිධ සංඛ්‍යා පද්ධති භාවිතා කරනු ලබයි.
+මෙම පාඨමාලාව මගින් ජාතික ICT විෂය නිර්දේශයට අනුකූලව **පරිගණක විද්‍යාව** සහ **තොරතුරු තාක්ෂණය** පිළිබඳ පූර්ණ දැනුම ලබා දේ.
 
-### ප්‍රධාන සංඛ්‍යා පද්ධති:
-1. **දශමය සංඛ්‍යා පද්ධතිය (Decimal):** 45<sub>10</sub>
-2. **ද්විමය සංඛ්‍යා පද්ධතිය (Binary):** 1011<sub>2</sub>
-3. **අෂ්ටමය සංඛ්‍යා පද්ධතිය (Octal):** 74<sub>8</sub>
-4. **ෂඩ්දශමය සංඛ්‍යා පද්ධතිය (Hexadecimal):** 9F<sub>16</sub>
+### පාඨමාලාවේ ප්‍රධාන අරමුණු:
+* පරිගණක පද්ධති සහ දෘඩාංග පිළිබඳ මූලික අවබෝධය ලබා දීම
+* දත්ත නිරූපණය සහ සංඛ්‍යා පද්ධති පිළිබඳ ප්‍රායෝගික දැනුම
+* වෙබ් අඩවි නිර්මාණය සහ ක්‍රමලේඛනය (Programming)
 
-## සාරාංශ වගුව (Summary Table)
-
-| සංඛ්‍යා පද්ධතිය | පාදය (Base) | භාවිතා වන සංකේත | උදාහරණයක් |
-| :--- | :---: | :--- | :--- |
-| **දශමය (Decimal)** | 10 | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 | 245<sub>10</sub> |
-| **ද්විමය (Binary)** | 2 | 0, 1 | 10110<sub>2</sub> |
-| **අෂ්ටමය (Octal)** | 8 | 0, 1, 2, 3, 4, 5, 6, 7 | 457<sub>8</sub> |
-| **ෂඩ්දශමය (Hex)** | 16 | 0-9 සහ A, B, C, D, E, F | 1A3F<sub>16</sub> |`;
+> **සටහන:** එක් එක් පාඩම් (Lessons) සහ අභ්‍යාස සවිස්තරාත්මකව හැදෑරීම සඳහා Module සටහන් භාවිතා කරන්න.`;
 
   const [description, setDescription] = useState(sampleMarkdown);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Lesson Management State
+  const [managingCourse, setManagingCourse] = useState<any | null>(null);
+  const [showLessonsModal, setShowLessonsModal] = useState(false);
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [selectedModuleId, setSelectedModuleId] = useState<string>('');
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [lessonDuration, setLessonDuration] = useState(15);
+  const [lessonContent, setLessonContent] = useState('');
+  const [lessonActiveTab, setLessonActiveTab] = useState<'write' | 'preview'>('write');
+  const [lessonLoading, setLessonLoading] = useState(false);
+
+  const sampleLessonMarkdown = `### 1. හැඳින්වීම
+දත්ත සහ තොරතුරු සැකසීම පිළිබඳ පූර්ණ විස්තරය...
+
+* **අංග 1:** විග්‍රහය
+* **අංග 2:** උදාහරණ 45<sub>10</sub>, 1011<sub>2</sub>
+
+| අංගය | අගය |
+| :--- | :--- |
+| **දශමය** | 10 |
+| **ද්විමය** | 2 |`;
+
+  const openManageLessons = (course: any) => {
+    setManagingCourse(course);
+    const firstModId = course.modules?.[0]?.id || '';
+    setSelectedModuleId(firstModId);
+    setEditingLessonId(null);
+    setLessonTitle('');
+    setLessonDuration(15);
+    setLessonContent(sampleLessonMarkdown);
+    setShowLessonsModal(true);
+  };
+
+  const openAddLessonForm = () => {
+    setEditingLessonId(null);
+    setLessonTitle('');
+    setLessonDuration(15);
+    setLessonContent(sampleLessonMarkdown);
+  };
+
+  const openEditLessonForm = (lesson: any) => {
+    setEditingLessonId(lesson.id);
+    setLessonTitle(lesson.title || '');
+    setLessonDuration(lesson.durationMinutes || 15);
+    const secText = Array.isArray(lesson.sections) && lesson.sections[0] ? lesson.sections[0].text : '';
+    setLessonContent(secText);
+  };
+
+  const handleSaveLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managingCourse) return;
+    setLessonLoading(true);
+
+    let targetModuleId = selectedModuleId;
+    if (!targetModuleId) {
+      if (managingCourse.modules && managingCourse.modules.length > 0) {
+        targetModuleId = managingCourse.modules[0].id;
+      } else {
+        setMessage('Please select or create a module first.');
+        setLessonLoading(false);
+        return;
+      }
+    }
+
+    const isEdit = !!editingLessonId;
+    const url = '/api/admin/lessons';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(isEdit ? { id: editingLessonId } : { moduleId: targetModuleId }),
+          title: lessonTitle,
+          durationMinutes: lessonDuration,
+          sections: [
+            {
+              heading: lessonTitle,
+              text: lessonContent,
+            },
+          ],
+        }),
+      });
+
+      if (res.ok) {
+        setMessage(isEdit ? 'Lesson updated successfully!' : 'Lesson created successfully!');
+        fetchCourses();
+        setShowLessonsModal(false);
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLessonLoading(false);
+    }
+  };
+
+  const handleDeleteLesson = async (lessonId: string) => {
+    if (!confirm('Are you sure you want to delete this lesson?')) return;
+    try {
+      const res = await fetch(`/api/admin/lessons?id=${lessonId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMessage('Lesson deleted successfully.');
+        fetchCourses();
+        setShowLessonsModal(false);
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fetchCourses = () => {
     fetch('/api/admin/courses')
@@ -183,6 +288,12 @@ export default function AdminCoursesPage() {
               <span className="text-slate-500">{course.modules?.length || 0} Modules</span>
 
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openManageLessons(course)}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-indigo-500/30"
+                >
+                  <BookOpen className="w-3.5 h-3.5" /> Manage Lessons
+                </button>
                 <button
                   onClick={() => openEditModal(course)}
                   className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -336,6 +447,182 @@ export default function AdminCoursesPage() {
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg"
                 >
                   {loading ? 'Saving...' : editingCourseId ? 'Update Course' : 'Save Course to NeonDB'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Managing / Creating Lessons */}
+      {showLessonsModal && managingCourse && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-3xl w-full space-y-6 shadow-2xl my-8 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-cyan-400" />
+                  Manage Lessons & Content
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Course: <span className="text-slate-200 font-semibold">{managingCourse.title}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setShowLessonsModal(false)}
+                className="text-slate-400 hover:text-white text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List of Existing Lessons in Course */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Existing Lessons
+                </span>
+                <button
+                  type="button"
+                  onClick={openAddLessonForm}
+                  className="px-3 py-1 rounded-xl bg-indigo-600/30 text-indigo-300 text-xs font-semibold hover:bg-indigo-600/40 border border-indigo-500/30 flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> New Lesson
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto p-2 rounded-2xl bg-slate-950 border border-slate-800">
+                {(managingCourse.modules || []).flatMap((m: any) => m.lessons || []).length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-3">
+                    No lessons in this course yet. Use the form below to create one!
+                  </p>
+                ) : (
+                  (managingCourse.modules || []).flatMap((m: any) =>
+                    (m.lessons || []).map((l: any) => (
+                      <div
+                        key={l.id}
+                        className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-slate-200">{l.title}</div>
+                          <div className="text-[10px] text-slate-400">{l.durationMinutes} Mins Read</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditLessonForm(l)}
+                            className="px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 hover:bg-cyan-900 font-semibold"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLesson(l.id)}
+                            className="p-1 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* Lesson Edit / Create Form */}
+            <form onSubmit={handleSaveLesson} className="space-y-4 pt-2 border-t border-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                {editingLessonId ? 'Edit Lesson Content' : 'Create New Lesson with Markdown'}
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 uppercase">Lesson Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    placeholder="e.g. පරිගණක විද්‍යාවේ සංඛ්‍යා පද්ධති"
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 uppercase">
+                    Duration (Minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={lessonDuration}
+                    onChange={(e) => setLessonDuration(parseInt(e.target.value, 10))}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  />
+                </div>
+              </div>
+
+              {/* Lesson Body Markdown Editor with Preview Tab */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300 uppercase">
+                    Lesson Markdown Content (Subscript <sub>10</sub> & Tables Supported)
+                  </label>
+
+                  <div className="flex items-center p-0.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setLessonActiveTab('write')}
+                      className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+                        lessonActiveTab === 'write' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Edit3 className="w-3 h-3" /> Write .md
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLessonActiveTab('preview')}
+                      className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+                        lessonActiveTab === 'preview' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" /> Live Render Preview
+                    </button>
+                  </div>
+                </div>
+
+                {lessonActiveTab === 'write' ? (
+                  <textarea
+                    rows={8}
+                    required
+                    value={lessonContent}
+                    onChange={(e) => setLessonContent(e.target.value)}
+                    placeholder="# Lesson Section&#10;Add detailed markdown notes, <sub>10</sub> subscript tags, tables..."
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 leading-relaxed"
+                  />
+                ) : (
+                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl max-h-64 overflow-y-auto">
+                    <MarkdownRenderer content={lessonContent} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLessonsModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={lessonLoading}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg"
+                >
+                  {lessonLoading ? 'Saving...' : editingLessonId ? 'Update Lesson' : 'Save Lesson'}
                 </button>
               </div>
             </form>

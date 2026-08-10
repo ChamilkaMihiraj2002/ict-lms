@@ -28,23 +28,47 @@ export default function LessonViewerPage() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
-    setUser(getStoredUser());
+    const currentUser = getStoredUser();
+    setUser(currentUser);
 
-    // Search for lesson in courses list
-    const allCourses = getAllCourses();
-    for (const course of allCourses) {
-      for (const module of course.modules) {
-        const found = module.lessons.find((l) => l.id === lessonId);
+    const findLessonInCourses = (coursesList: any[]) => {
+      for (const course of coursesList) {
+        for (const module of course.modules || []) {
+          const found = module.lessons?.find((l: any) => l.id === lessonId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    fetch('/api/courses')
+      .then((res) => res.json())
+      .then((data) => {
+        const found = Array.isArray(data) ? findLessonInCourses(data) : null;
         if (found) {
           setLesson(found);
-          const currentUser = getStoredUser();
           if (currentUser?.completedLessonIds?.includes(found.id)) {
             setIsCompleted(true);
           }
-          break;
+        } else {
+          const fallback = findLessonInCourses(getAllCourses());
+          if (fallback) {
+            setLesson(fallback);
+            if (currentUser?.completedLessonIds?.includes(fallback.id)) {
+              setIsCompleted(true);
+            }
+          }
         }
-      }
-    }
+      })
+      .catch(() => {
+        const fallback = findLessonInCourses(getAllCourses());
+        if (fallback) {
+          setLesson(fallback);
+          if (currentUser?.completedLessonIds?.includes(fallback.id)) {
+            setIsCompleted(true);
+          }
+        }
+      });
   }, [lessonId]);
 
   if (!lesson) {
