@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       });
 
       if (!quiz) {
-        const fallbackQuiz = QUIZZES.find((q) => q.id === quizId);
+        const fallbackQuiz = QUIZZES.find((q: any) => q.id === quizId);
         if (!fallbackQuiz) {
           return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
         }
@@ -31,12 +31,12 @@ export async function GET(request: Request) {
 
     if (!quizzes || quizzes.length === 0) {
       let fallback = QUIZZES;
-      if (mediumParam) fallback = fallback.filter((q) => q.medium === mediumParam);
+      if (mediumParam) fallback = fallback.filter((q: any) => q.medium === mediumParam);
       return NextResponse.json(fallback);
     }
 
     if (mediumParam) {
-      quizzes = quizzes.filter((q) => q.medium === mediumParam);
+      quizzes = quizzes.filter((q: any) => q.medium === mediumParam);
     }
 
     return NextResponse.json(quizzes);

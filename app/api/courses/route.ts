@@ -20,18 +20,18 @@ export async function GET(request: Request) {
 
     if (!courses || courses.length === 0) {
       let fallback = COURSES;
-      if (gradeParam) fallback = fallback.filter((c) => c.grade === parseInt(gradeParam, 10));
-      if (mediumParam) fallback = fallback.filter((c) => c.medium === mediumParam);
+      if (gradeParam) fallback = fallback.filter((c: any) => c.grade === parseInt(gradeParam, 10));
+      if (mediumParam) fallback = fallback.filter((c: any) => c.medium === mediumParam);
       return NextResponse.json(fallback);
     }
 
     if (gradeParam) {
       const grade = parseInt(gradeParam, 10);
-      courses = courses.filter((c) => c.grade === grade);
+      courses = courses.filter((c: any) => c.grade === grade);
     }
 
     if (mediumParam) {
-      courses = courses.filter((c) => c.medium === mediumParam);
+      courses = courses.filter((c: any) => c.medium === mediumParam);
     }
 
     return NextResponse.json(courses);
