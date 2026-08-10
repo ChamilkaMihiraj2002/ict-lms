@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { createJWT, COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -43,7 +44,24 @@ export async function POST(request: Request) {
     }
 
     const { password: _, ...userWithoutPassword } = user;
-    return NextResponse.json({ user: userWithoutPassword });
+    const token = await createJWT({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      grade: user.grade,
+    });
+
+    const response = NextResponse.json({ user: userWithoutPassword, success: true });
+    response.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    return response;
   } catch (error) {
     console.error('Login API error:', error);
     return NextResponse.json({ error: 'Internal server error during login' }, { status: 500 });

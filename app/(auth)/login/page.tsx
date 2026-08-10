@@ -33,6 +33,7 @@ export default function LoginPage() {
 
       saveStoredUser(data.user);
 
+      router.refresh();
       if (data.user.role === 'ADMIN') {
         router.push('/admin');
       } else {

@@ -84,7 +84,7 @@ export default function ActiveQuizPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quizId: quiz.id,
-          studentName: user.name,
+          studentName: user?.name || 'Student',
           answers: userAnswers,
           timeSpentSeconds,
         }),

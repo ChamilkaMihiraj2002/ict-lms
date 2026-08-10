@@ -6,17 +6,14 @@ const STORAGE_KEYS = {
   QUIZ_RESULTS: 'ict_lms_quiz_results_v1',
 };
 
-export function getStoredUser(): User {
-  if (typeof window === 'undefined') return INITIAL_USER;
+export function getStoredUser(): User | null {
+  if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.USER);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(INITIAL_USER));
-      return INITIAL_USER;
-    }
+    if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) {
-    return INITIAL_USER;
+    return null;
   }
 }
 
@@ -41,8 +38,8 @@ export function logoutStoredUser(): void {
   }
 }
 
-export function markLessonAsCompleted(lessonId: string): User {
-  const user = getStoredUser();
+export function markLessonAsCompleted(lessonId: string): User | null {
+  const user = getStoredUser() || INITIAL_USER;
   if (!user.completedLessonIds.includes(lessonId)) {
     const updated: User = {
       ...user,
@@ -87,7 +84,7 @@ export function saveQuizResult(result: QuizResult): void {
       const updatedList = [result, ...existing.filter((r) => r.id !== result.id)];
       localStorage.setItem(STORAGE_KEYS.QUIZ_RESULTS, JSON.stringify(updatedList));
 
-      const user = getStoredUser();
+      const user = getStoredUser() || INITIAL_USER;
       const earnedPoints = result.passed ? result.scorePercentage + 50 : 10;
       saveStoredUser({
         ...user,

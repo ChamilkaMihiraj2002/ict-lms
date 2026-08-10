@@ -36,6 +36,7 @@ export default function RegisterPage() {
       }
 
       saveStoredUser(data.user);
+      router.refresh();
       router.push('/');
     } catch (err: any) {
       setErrorMsg(err.message || 'Error registering student');

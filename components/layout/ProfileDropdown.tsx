@@ -26,10 +26,16 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
     logoutStoredUser();
     setIsOpen(false);
     router.push('/login');
+    router.refresh();
   };
 
   const isAdmin = (user as any).role === 'ADMIN';

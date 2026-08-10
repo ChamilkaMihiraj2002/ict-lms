@@ -19,7 +19,7 @@ import {
   GraduationCap,
   Globe,
 } from 'lucide-react';
-import { getStoredUser, getAllCourses, getAllQuizzes } from '@/lib/db';
+import { getStoredUser, saveStoredUser, getAllCourses, getAllQuizzes } from '@/lib/db';
 import { Course, MediumType, Quiz, User } from '@/types';
 
 export default function StudentDashboard() {
@@ -31,10 +31,23 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const currentUser = getStoredUser();
-    setUser(currentUser);
     if (currentUser) {
+      setUser(currentUser);
       setSelectedMedium(currentUser.medium || 'ENGLISH');
     }
+
+    // Fetch live session from JWT cookie via /api/auth/me
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          setUser(data.user);
+          saveStoredUser(data.user);
+          if (data.user.medium) setSelectedMedium(data.user.medium);
+        }
+      })
+      .catch(() => {});
+
     setQuizzes(getAllQuizzes());
 
     fetch('/api/courses')

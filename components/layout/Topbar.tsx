@@ -6,7 +6,7 @@ import { Search, User as UserIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { NotificationsDropdown } from '@/components/layout/NotificationsDropdown';
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
-import { getStoredUser } from '@/lib/db';
+import { getStoredUser, saveStoredUser } from '@/lib/db';
 import { User } from '@/types';
 
 export function Topbar({ pageTitle }: { pageTitle?: string }) {
@@ -14,7 +14,18 @@ export function Topbar({ pageTitle }: { pageTitle?: string }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    setUser(getStoredUser());
+    const localUser = getStoredUser();
+    if (localUser) setUser(localUser);
+
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          setUser(data.user);
+          saveStoredUser(data.user);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   return (

@@ -38,7 +38,7 @@ export default function LessonViewerPage() {
         if (found) {
           setLesson(found);
           const currentUser = getStoredUser();
-          if (currentUser.completedLessonIds.includes(found.id)) {
+          if (currentUser?.completedLessonIds?.includes(found.id)) {
             setIsCompleted(true);
           }
           break;
