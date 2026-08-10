@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Trash2, GraduationCap, Shield, AlertCircle, CheckCircle } from 'lucide-react';
-import { GradeLevel } from '@/types';
+import { Search, Trash2, CheckCircle } from 'lucide-react';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<{ id: string; name: string; email: string } | null>(null);
   const [message, setMessage] = useState('');
 
   const fetchUsers = () => {
@@ -59,19 +61,23 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user from PostgreSQL?')) return;
+  const handleConfirmDeleteUser = async () => {
+    if (!deletingUser) return;
+    setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/admin/users?id=${userId}`, {
+      const res = await fetch(`/api/admin/users?id=${deletingUser.id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
         setMessage('User deleted from database.');
+        setDeletingUser(null);
         fetchUsers();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -153,9 +159,9 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-4 text-right">
                     <button
-                      onClick={() => handleDeleteUser(u.id)}
+                      onClick={() => setDeletingUser({ id: u.id, name: u.name, email: u.email })}
                       className="p-2 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Delete User"
+                      title="Delete User Account"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -166,6 +172,17 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {/* Popup Confirmation Modal for User Deletion */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingUser}
+        title="Delete User Account?"
+        itemName={deletingUser ? `${deletingUser.name} (${deletingUser.email})` : undefined}
+        description="Are you sure you want to delete this user from NeonDB PostgreSQL? Their account, quiz results, and progress will be permanently deleted."
+        loading={deleteLoading}
+        onConfirm={handleConfirmDeleteUser}
+        onClose={() => setDeletingUser(null)}
+      />
     </div>
   );
 }
