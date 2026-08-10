@@ -1,0 +1,120 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum Medium {
+  ENGLISH
+  SINHALA
+}
+
+model User {
+  id                 String       @id @default(uuid())
+  name               String
+  email              String       @unique
+  password           String
+  role               Role         @default(STUDENT)
+  grade              Int          @default(10)
+  medium             Medium       @default(ENGLISH)
+  points             Int          @default(100)
+  streakDays         Int          @default(1)
+  completedLessonIds String[]     @default([])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  quizResults        QuizResult[]
+}
+
+model Course {
+  id             String   @id @default(uuid())
+  title          String
+  grade          Int
+  medium         Medium   @default(ENGLISH)
+  category       String
+  description    String
+  iconName       String   @default("BookOpen")
+  bannerGradient String   @default("from-blue-600 to-cyan-500")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  modules        Module[]
+  quizzes        Quiz[]
+}
+
+model Module {
+  id          String   @id @default(uuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  order       Int      @default(1)
+  lessons     Lesson[]
+}
+
+model Lesson {
+  id              String   @id @default(uuid())
+  moduleId        String
+  module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title           String
+  order           Int      @default(1)
+  durationMinutes Int      @default(15)
+  sections        Json
+}
+
+model Quiz {
+  id              String       @id @default(uuid())
+  courseId        String
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  grade           Int
+  medium          Medium       @default(ENGLISH)
+  durationMinutes Int          @default(10)
+  passingScore    Int          @default(70)
+  questions       Question[]
+  quizResults     QuizResult[]
+}
+
+model Question {
+  id             String   @id @default(uuid())
+  quizId         String
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text           String
+  type           String   @default("single")
+  options        Json
+  correctAnswers Int[]
+  explanation    String
+}
+
+model QuizResult {
+  id                  String   @id @default(uuid())
+  quizId              String
+  quiz                Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scorePercentage     Int
+  correctAnswersCount Int
+  totalQuestions      Int
+  passed              Boolean
+  timeSpentSeconds    Int
+  details             Json
+  submittedAt         DateTime @default(now())
+}
+
+model Paper {
+  id          String   @id @default(uuid())
+  title       String
+  grade       Int
+  medium      Medium   @default(ENGLISH)
+  year        Int?
+  driveUrl    String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
