@@ -40,8 +40,8 @@ export default function LessonViewerPage() {
 
     const findLessonInCourses = (coursesList: any[]) => {
       for (const course of coursesList) {
-        for (const module of course.modules || []) {
-          const found = module.lessons?.find((l: any) => l.id === lessonId);
+        for (const mod of course.modules || []) {
+          const found = mod.lessons?.find((l: any) => l.id === lessonId);
           if (found) return found;
         }
       }
