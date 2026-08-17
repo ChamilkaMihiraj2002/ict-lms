@@ -13,7 +13,14 @@ import {
   FileCode,
   ChevronRight,
   HelpCircle,
+  FileText,
 } from 'lucide-react';
+
+const getYoutubeId = (url: string) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url?.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
 import { getAllCourses, markLessonAsCompleted, getStoredUser } from '@/lib/db';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { Lesson, User } from '@/types';
@@ -156,6 +163,74 @@ export default function LessonViewerPage() {
               )}
             </div>
           ))}
+
+          {/* New Sub-Lessons Rendering */}
+          {lesson.subLessons?.map((sl: any, idx: number) => (
+            <div key={sl.id || `sl-${idx}`} id={`sublesson-${idx}`} className="space-y-6 scroll-mt-24 pt-8 border-t border-slate-200 dark:border-slate-800">
+               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                 <span className="w-2 h-6 rounded-full bg-cyan-500 dark:bg-cyan-400 inline-block" />
+                 {sl.title}
+               </h2>
+               
+               {sl.content && <MarkdownRenderer content={sl.content} />}
+               
+               {sl.videos?.length > 0 && (
+                 <div className="space-y-4 pt-4">
+                   <h3 className="text-lg font-bold flex items-center gap-2 text-indigo-600 dark:text-cyan-400">
+                     <Play className="w-5 h-5" /> Video Resources
+                   </h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {sl.videos.map((v: any, vIdx: number) => {
+                       const yId = getYoutubeId(v.youtubeUrl);
+                       return (
+                         <div key={v.id || vIdx} className="rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-lg">
+                           {yId ? (
+                             <iframe 
+                               className="w-full aspect-video" 
+                               src={`https://www.youtube.com/embed/${yId}`} 
+                               title={v.title}
+                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                               allowFullScreen 
+                             />
+                           ) : (
+                             <div className="w-full aspect-video flex items-center justify-center text-xs text-slate-500 bg-slate-950">Invalid YouTube URL</div>
+                           )}
+                           <div className="p-3 text-sm font-semibold text-slate-200 truncate">{v.title}</div>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+
+               {sl.pdfs?.length > 0 && (
+                 <div className="space-y-4 pt-4">
+                   <h3 className="text-lg font-bold flex items-center gap-2 text-rose-500 dark:text-rose-400">
+                     <FileText className="w-5 h-5" /> Document Resources
+                   </h3>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     {sl.pdfs.map((p: any, pIdx: number) => (
+                       <a 
+                         key={p.id || pIdx} 
+                         href={p.pdfUrl} 
+                         target="_blank" 
+                         rel="noopener noreferrer"
+                         className="flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-400 dark:hover:border-rose-500 transition-colors shadow-sm group"
+                       >
+                         <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
+                           <FileText className="w-5 h-5" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <div className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{p.title}</div>
+                           <div className="text-xs text-slate-500 dark:text-slate-400">PDF Document</div>
+                         </div>
+                       </a>
+                     ))}
+                   </div>
+                 </div>
+               )}
+            </div>
+          ))}
         </div>
 
         {/* Lesson Footer Controls */}
@@ -183,13 +258,22 @@ export default function LessonViewerPage() {
             Table of Contents
           </div>
           <nav className="space-y-2">
-            {lesson.sections.map((sec, idx) => (
+            {lesson.sections?.map((sec, idx) => (
               <a
                 key={idx}
                 href={`#section-${idx}`}
                 className="block text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors leading-snug"
               >
                 {idx + 1}. {sec.heading}
+              </a>
+            ))}
+            {lesson.subLessons?.map((sl: any, idx: number) => (
+              <a
+                key={`sl-${idx}`}
+                href={`#sublesson-${idx}`}
+                className="block text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors leading-snug"
+              >
+                • {sl.title}
               </a>
             ))}
           </nav>

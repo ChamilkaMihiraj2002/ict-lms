@@ -15,6 +15,32 @@ export interface User {
   role?: 'STUDENT' | 'ADMIN';
 }
 
+export interface Video {
+  id: string;
+  subLessonId: string;
+  title: string;
+  youtubeUrl: string;
+  order: number;
+}
+
+export interface Pdf {
+  id: string;
+  subLessonId: string;
+  title: string;
+  pdfUrl: string;
+  order: number;
+}
+
+export interface SubLesson {
+  id: string;
+  lessonId: string;
+  title: string;
+  order: number;
+  content?: string;
+  videos: Video[];
+  pdfs: Pdf[];
+}
+
 export interface Lesson {
   id: string;
   courseId: string;
@@ -32,6 +58,7 @@ export interface Lesson {
     };
     tip?: string;
   }[];
+  subLessons?: SubLesson[];
 }
 
 export interface Module {

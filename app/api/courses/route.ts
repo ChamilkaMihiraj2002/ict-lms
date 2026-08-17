@@ -12,7 +12,16 @@ export async function GET(request: Request) {
       include: {
         modules: {
           include: {
-            lessons: true,
+            lessons: {
+              include: {
+                subLessons: {
+                  include: {
+                    videos: true,
+                    pdfs: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
