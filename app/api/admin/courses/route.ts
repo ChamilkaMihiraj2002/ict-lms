@@ -38,7 +38,17 @@ export async function POST(request: Request) {
         description,
         iconName,
         bannerGradient,
+        modules: {
+          create: [{
+            title: 'Main Module',
+            description: 'Main topics for this course',
+            order: 1
+          }]
+        }
       },
+      include: {
+        modules: true
+      }
     });
 
     return NextResponse.json(course);

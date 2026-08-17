@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, BookOpen, CheckCircle, Sparkles, Eye, Edit3, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, CheckCircle, Sparkles, Eye, Edit3, Trash2, Video, FileText, PlusCircle } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { GradeLevel, MediumType } from '@/types';
@@ -43,6 +43,7 @@ export default function AdminCoursesPage() {
   const [lessonContent, setLessonContent] = useState('');
   const [lessonActiveTab, setLessonActiveTab] = useState<'write' | 'preview'>('write');
   const [lessonLoading, setLessonLoading] = useState(false);
+  const [subLessons, setSubLessons] = useState<any[]>([]);
 
   const sampleLessonMarkdown = `### 1. හැඳින්වීම
 දත්ත සහ තොරතුරු සැකසීම පිළිබඳ පූර්ණ විස්තරය...
@@ -63,6 +64,7 @@ export default function AdminCoursesPage() {
     setLessonTitle('');
     setLessonDuration(15);
     setLessonContent(sampleLessonMarkdown);
+    setSubLessons([]);
     setShowLessonsModal(true);
   };
 
@@ -71,6 +73,7 @@ export default function AdminCoursesPage() {
     setLessonTitle('');
     setLessonDuration(15);
     setLessonContent(sampleLessonMarkdown);
+    setSubLessons([]);
   };
 
   const openEditLessonForm = (lesson: any) => {
@@ -79,6 +82,7 @@ export default function AdminCoursesPage() {
     setLessonDuration(lesson.durationMinutes || 15);
     const secText = Array.isArray(lesson.sections) && lesson.sections[0] ? lesson.sections[0].text : '';
     setLessonContent(secText);
+    setSubLessons(lesson.subLessons || []);
   };
 
   const handleSaveLesson = async (e: React.FormEvent) => {
@@ -91,7 +95,7 @@ export default function AdminCoursesPage() {
       if (managingCourse.modules && managingCourse.modules.length > 0) {
         targetModuleId = managingCourse.modules[0].id;
       } else {
-        setMessage('Please select or create a module first.');
+        alert('This course has no modules yet. Please try refreshing the page or create a module first.');
         setLessonLoading(false);
         return;
       }
@@ -115,6 +119,7 @@ export default function AdminCoursesPage() {
               text: lessonContent,
             },
           ],
+          subLessons: subLessons,
         }),
       });
 
@@ -123,6 +128,9 @@ export default function AdminCoursesPage() {
         fetchCourses();
         setShowLessonsModal(false);
         setTimeout(() => setMessage(''), 3000);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Error: ${errData.error || 'Failed to save lesson. Check server console.'}`);
       }
     } catch (e) {
       console.error(e);
@@ -568,7 +576,7 @@ export default function AdminCoursesPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-300 uppercase">
-                    Lesson Markdown Content (Subscript <sub>10</sub> & Tables Supported)
+                    Lesson Intro (Legacy Content)
                   </label>
 
                   <div className="flex items-center p-0.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-bold">
@@ -595,11 +603,10 @@ export default function AdminCoursesPage() {
 
                 {lessonActiveTab === 'write' ? (
                   <textarea
-                    rows={8}
-                    required
+                    rows={4}
                     value={lessonContent}
                     onChange={(e) => setLessonContent(e.target.value)}
-                    placeholder="# Lesson Section&#10;Add detailed markdown notes, <sub>10</sub> subscript tags, tables..."
+                    placeholder="Short intro paragraph..."
                     className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 leading-relaxed"
                   />
                 ) : (
@@ -607,6 +614,181 @@ export default function AdminCoursesPage() {
                     <MarkdownRenderer content={lessonContent} />
                   </div>
                 )}
+              </div>
+
+              {/* Sub-Lessons Builder */}
+              <div className="space-y-4 pt-4 border-t border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                    Sub-Lessons (Rich Content)
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => setSubLessons([...subLessons, { id: Date.now(), title: '', content: '', videos: [], pdfs: [] }])}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-indigo-500/30"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" /> Add Sub-Lesson
+                  </button>
+                </div>
+
+                {subLessons.map((sl, slIdx) => (
+                  <div key={sl.id || slIdx} className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-400">Sub-Lesson {slIdx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...subLessons];
+                          updated.splice(slIdx, 1);
+                          setSubLessons(updated);
+                        }}
+                        className="text-rose-400 hover:text-rose-300 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Sub-Lesson Title"
+                        value={sl.title}
+                        onChange={(e) => {
+                          const updated = [...subLessons];
+                          updated[slIdx].title = e.target.value;
+                          setSubLessons(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 text-xs"
+                      />
+                      <textarea
+                        rows={3}
+                        placeholder="Markdown Content..."
+                        value={sl.content}
+                        onChange={(e) => {
+                          const updated = [...subLessons];
+                          updated[slIdx].content = e.target.value;
+                          setSubLessons(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 text-xs font-mono"
+                      />
+
+                      {/* Videos */}
+                      <div className="space-y-2 pt-2 border-t border-slate-800/50">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+                          <span>Videos</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...subLessons];
+                              if(!updated[slIdx].videos) updated[slIdx].videos = [];
+                              updated[slIdx].videos.push({ id: Date.now(), title: '', youtubeUrl: '' });
+                              setSubLessons(updated);
+                            }}
+                            className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Add Video
+                          </button>
+                        </div>
+                        {sl.videos?.map((v: any, vIdx: number) => (
+                          <div key={v.id || vIdx} className="flex gap-2 items-center">
+                            <Video className="w-4 h-4 text-slate-500 shrink-0" />
+                            <input
+                              type="text"
+                              placeholder="Video Title"
+                              value={v.title}
+                              onChange={(e) => {
+                                const updated = [...subLessons];
+                                updated[slIdx].videos[vIdx].title = e.target.value;
+                                setSubLessons(updated);
+                              }}
+                              className="flex-1 min-w-[100px] px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white"
+                            />
+                            <input
+                              type="text"
+                              placeholder="YouTube URL"
+                              value={v.youtubeUrl}
+                              onChange={(e) => {
+                                const updated = [...subLessons];
+                                updated[slIdx].videos[vIdx].youtubeUrl = e.target.value;
+                                setSubLessons(updated);
+                              }}
+                              className="flex-1 min-w-[150px] px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...subLessons];
+                                updated[slIdx].videos.splice(vIdx, 1);
+                                setSubLessons(updated);
+                              }}
+                              className="text-rose-400 p-1 shrink-0"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* PDFs */}
+                      <div className="space-y-2 pt-2 border-t border-slate-800/50">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase">
+                          <span>PDF Documents</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...subLessons];
+                              if(!updated[slIdx].pdfs) updated[slIdx].pdfs = [];
+                              updated[slIdx].pdfs.push({ id: Date.now(), title: '', pdfUrl: '' });
+                              setSubLessons(updated);
+                            }}
+                            className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Add PDF
+                          </button>
+                        </div>
+                        {sl.pdfs?.map((p: any, pIdx: number) => (
+                          <div key={p.id || pIdx} className="flex gap-2 items-center">
+                            <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                            <input
+                              type="text"
+                              placeholder="PDF Title"
+                              value={p.title}
+                              onChange={(e) => {
+                                const updated = [...subLessons];
+                                updated[slIdx].pdfs[pIdx].title = e.target.value;
+                                setSubLessons(updated);
+                              }}
+                              className="flex-1 min-w-[100px] px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white"
+                            />
+                            <input
+                              type="text"
+                              placeholder="PDF URL"
+                              value={p.pdfUrl}
+                              onChange={(e) => {
+                                const updated = [...subLessons];
+                                updated[slIdx].pdfs[pIdx].pdfUrl = e.target.value;
+                                setSubLessons(updated);
+                              }}
+                              className="flex-1 min-w-[150px] px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...subLessons];
+                                updated[slIdx].pdfs.splice(pIdx, 1);
+                                setSubLessons(updated);
+                              }}
+                              className="text-rose-400 p-1 shrink-0"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

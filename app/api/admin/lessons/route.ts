@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
-    const { moduleId, title, order = 1, durationMinutes = 15, sections } = await request.json();
+    const { moduleId, title, order = 1, durationMinutes = 15, sections, subLessons } = await request.json();
 
-    if (!moduleId || !title || !sections) {
-      return NextResponse.json({ error: 'moduleId, title, and sections are required' }, { status: 400 });
+    if (!moduleId || !title) {
+      return NextResponse.json({ error: 'moduleId and title are required' }, { status: 400 });
     }
 
     const lesson = await prisma.lesson.create({
@@ -15,23 +15,43 @@ export async function POST(request: Request) {
         title,
         order: parseInt(String(order), 10),
         durationMinutes: parseInt(String(durationMinutes), 10),
-        sections,
+        sections: sections || [],
+        ...(subLessons ? {
+          subLessons: {
+            create: subLessons.map((sl: any) => ({
+              title: sl.title,
+              content: sl.content,
+              order: sl.order || 1,
+              videos: {
+                create: (sl.videos || []).map((v: any, vIdx: number) => ({ title: v.title, youtubeUrl: v.youtubeUrl, order: v.order || vIdx + 1 }))
+              },
+              pdfs: {
+                create: (sl.pdfs || []).map((p: any, pIdx: number) => ({ title: p.title, pdfUrl: p.pdfUrl, order: p.order || pIdx + 1 }))
+              }
+            }))
+          }
+        } : {})
       },
     });
 
     return NextResponse.json(lesson);
   } catch (error) {
     console.error('Create lesson error:', error);
-    return NextResponse.json({ error: 'Failed to create lesson' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create lesson' }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const { id, title, order, durationMinutes, sections } = await request.json();
+    const { id, title, order, durationMinutes, sections, subLessons } = await request.json();
 
     if (!id || !title) {
       return NextResponse.json({ error: 'Lesson ID and title are required' }, { status: 400 });
+    }
+
+    if (subLessons !== undefined) {
+      // Delete existing sub-lessons to cleanly replace them
+      await prisma.subLesson.deleteMany({ where: { lessonId: id } });
     }
 
     const updated = await prisma.lesson.update({
@@ -41,13 +61,28 @@ export async function PUT(request: Request) {
         ...(order !== undefined ? { order: parseInt(String(order), 10) } : {}),
         ...(durationMinutes !== undefined ? { durationMinutes: parseInt(String(durationMinutes), 10) } : {}),
         ...(sections !== undefined ? { sections } : {}),
+        ...(subLessons !== undefined ? {
+          subLessons: {
+            create: subLessons.map((sl: any) => ({
+              title: sl.title,
+              content: sl.content,
+              order: sl.order || 1,
+              videos: {
+                create: (sl.videos || []).map((v: any, vIdx: number) => ({ title: v.title, youtubeUrl: v.youtubeUrl, order: v.order || vIdx + 1 }))
+              },
+              pdfs: {
+                create: (sl.pdfs || []).map((p: any, pIdx: number) => ({ title: p.title, pdfUrl: p.pdfUrl, order: p.order || pIdx + 1 }))
+              }
+            }))
+          }
+        } : {})
       },
     });
 
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Update lesson error:', error);
-    return NextResponse.json({ error: 'Failed to update lesson' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to update lesson' }, { status: 500 });
   }
 }
 
