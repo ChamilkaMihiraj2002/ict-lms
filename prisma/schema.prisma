@@ -30,6 +30,7 @@ model User {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   quizResults        QuizResult[]
+  submissions        Submission[]
 }
 
 model Course {
@@ -147,4 +148,41 @@ model Pdf {
   title       String
   pdfUrl      String
   order       Int        @default(1)
+}
+
+
+// Grade and teaching medium define tuition cohorts, matching the course catalog.
+model ClassroomItem {
+  id          String       @id @default(uuid())
+  kind        String
+  title       String
+  description String
+  grade       Int
+  medium      Medium
+  dueAt       DateTime?
+  endsAt      DateTime?
+  meetingUrl  String?
+  maxPoints   Int          @default(100)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submissions Submission[]
+
+  @@index([grade, medium, kind, dueAt])
+}
+
+model Submission {
+  id          String        @id @default(uuid())
+  itemId      String
+  item        ClassroomItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     String
+  attachmentUrl String?
+  submittedAt DateTime      @default(now())
+  score       Int?
+  feedback    String?
+  gradedAt    DateTime?
+
+  @@unique([itemId, userId])
+  @@index([userId])
 }
