@@ -9,6 +9,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  if (process.env.ALLOW_DEMO_SEED !== 'true' || process.env.NODE_ENV === 'production') throw new Error('Demo seeding requires ALLOW_DEMO_SEED=true in a development database.');
   console.log('Seeding NeonDB PostgreSQL database with English & Sinhala medium content & Papers...');
 
   const hashedAdminPassword = await bcrypt.hash('adminpassword123', 10);
