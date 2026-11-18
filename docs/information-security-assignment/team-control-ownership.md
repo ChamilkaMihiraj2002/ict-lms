@@ -1,0 +1,15 @@
+# Team Control Ownership
+
+Replace Member 1–5 with the actual names. Each member is accountable for one primary control and should contribute the listed evidence to the report and viva. If the group has fewer than five members, combine the last operational controls with another assignment; if it has more, split implementation and verification ownership.
+
+| Assigned member | Primary control | Scope and required work | Evidence for submission/viva |
+| --- | --- | --- | --- |
+| **Member 1 — Authentication and session control** | Protect account login and sessions | Document password hashing, login throttling, administrator MFA, session expiry/revocation, secure cookies, account recovery, and the policy for compromised accounts. Identify current versus proposed behavior. | Authentication flow diagram; risk R2/R9 section; demonstration of login/logout and proposed rate-limit/MFA behavior or clearly labeled design if not implemented. |
+| **Member 2 — Authorization and cohort isolation** | Enforce least privilege and data ownership | Review student/admin permissions and ensure every API reads the role and cohort from the current server-side user. Cover course, paper, assignment, grading, and quiz-result access. Include the `/api/papers` gap. | Access-control matrix; endpoint evidence; viva demonstration that a student cannot call an admin API or retrieve another user's result, plus proposed paper-scope fix. |
+| **Member 3 — Safe content and input handling** | Prevent injection and unsafe execution | Own output encoding/sanitization, server-side input schemas, link validation, request limits, and isolated execution for lesson code. Review `rehypeRaw`, `new Function`, and `dangerouslySetInnerHTML`. | Threat scenarios for stored XSS and malicious input; secure rendering design; safe test cases or screenshots without running a harmful payload. |
+| **Member 4 — Data protection and recovery** | Protect student records, secrets, and database availability | Define data classification, production TLS/database isolation, secret storage/rotation, backup encryption/retention, recovery objectives, and restore-test ownership. | Data-flow/storage diagram; backup and recovery procedure; deployment configuration checklist. |
+| **Member 5 — Audit, monitoring, and incident response** | Make security events detectable and actionable | Specify audit events for administrator changes, alert thresholds, log protection/retention, incident roles, containment, and post-incident review. | Sample redacted audit record; incident-response steps; monitoring/alert table; viva explanation of detection and response. |
+
+## Shared review
+
+Each member should review one other member's control and record one reviewer and review date in the final class submission. The team leader should merge the control evidence into the risk register, remove duplicated recommendations, and confirm that policy wording matches the proposed architecture. Do not report a control as implemented until its evidence has been observed.
